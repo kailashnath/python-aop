@@ -1,4 +1,13 @@
-from aop import around
+from aop import watchable, after
+from functools import wraps
+
+
+def inj(func):
+    @wraps(func)
+    def wrap(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrap
+
 
 class TransactionHandler(object):
 
@@ -9,11 +18,27 @@ class TransactionHandler(object):
 class Card(object):
     def __init__(self, name, balance=100):
         self.name = name
-        self.balance = balance
+        self._balance = balance
 
+    @watchable
+    def showBalance(self):
+        return self._balance
+
+    def setBalance(self, bal):
+        self._balance = bal
+
+    balance = property(showBalance, setBalance)
+
+    @inj
+    @watchable
     def debit(self, amount):
         self.balance -= amount
         return self.balance
+
+    @staticmethod
+    @watchable
+    def dumb():
+        print 'dumb'
 
 
 class Vendor(object):
@@ -24,19 +49,26 @@ class Vendor(object):
         return self.transHandler.doTransaction(card, 300)
 
 
-def checkBalance(transHandler, card, amount):
+def checkBalance(card, amount, result=None):
     if card.balance < amount:
         raise Exception("invalid balance")
 
 
-def logDebit(transHandler, card, reqAmount, result=None):
+def logDebit(card, reqAmount, result=None):
     print 'Amount of %d has been successfully debited towards your card %s' % (result, card.name)
 
 
-around(TransactionHandler.doTransaction, checkBalance, logDebit)
+def dummy():
+    pass
 
-citi = Card('citi', balance=500)
+
+def printBalance(card, result):
+    print result
+
+citi = Card('citi', balance=20)
+
+after(Card.showBalance, printBalance)
 
 
-samsung = Vendor()
-print samsung.transact(citi)
+citi.showBalance()
+
