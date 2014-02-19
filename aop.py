@@ -1,4 +1,5 @@
 from functools import wraps
+from inspect import isfunction, ismethod
 
 ENABLE_AOP = True
 
@@ -12,7 +13,13 @@ def uid(func):
 
 
 def register(coll,joinPoint, *advices):
-    jid = uid(joinPoint.__aop_func__)
+    act_func = getattr(joinPoint, '__aop_func__', None)
+
+    if not act_func:
+        raise TypeError("The %s is not watchable" % joinPoint)
+
+    jid = uid(act_func)
+
     if jid in coll:
         coll[jid] += advices
     else:

@@ -20,7 +20,6 @@ class Card(object):
         self.name = name
         self._balance = balance
 
-    @watchable
     def showBalance(self):
         return self._balance
 
